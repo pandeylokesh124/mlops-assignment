@@ -34,6 +34,23 @@ This repository contains an end-to-end MLOps pipeline for classifying heart dise
 ├── src/
 │   ├── apis/
 │   │   └── predict_api.py               # FastAPI application
+│   ├── data/
+│   │   └── download_data.py               # Download dataset
+│   │   └── preprocess_data.py             # Preprocess dataset
+│   │   └── validate_data.py               # Validate dataset
+│   ├── feature/
+│   │   └── prepare_data.py              # Data preprocessing logic
+│   └── models/
+│       ├── random_forest.py                 # Random Forest training pipeline
+│       ├── support_vector_classifier.py     # SVC training pipeline
+│       └── xgboost_model.py                 # XGBoost training pipeline
+├── test/
+│   ├── apis/
+│   │   └── predict_api.py               # FastAPI application
+│   ├── data/
+│   │   └── download_data.py               # Download dataset
+│   │   └── preprocess_data.py             # Preprocess dataset
+│   │   └── validate_data.py               # Validate dataset
 │   ├── feature/
 │   │   └── prepare_data.py              # Data preprocessing logic
 │   └── models/
