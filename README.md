@@ -82,6 +82,10 @@ This repository contains an end-to-end MLOps pipeline for classifying heart dise
 * prometheus-fastapi-instrumentator
 * mlflow-skinny
 * pytest
+* httpx>=0.24.0
+* ucimlrepo
+* xgboost
+* pytest-cov
 
 ### 1. Clone the repository and install dependencies
 ```bash
