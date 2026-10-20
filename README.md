@@ -2,7 +2,7 @@
 
 This repository contains an end-to-end MLOps pipeline for classifying heart disease. It demonstrates data preprocessing, model training, experiment tracking, model registry, and containerized API deployment using FastAPI and Docker.
 
-## 🚀 Project Architecture
+## Project Architecture
 
 1. **Data Preprocessing**: Generic pipeline using `ColumnTransformer`, `StandardScaler`, and `OneHotEncoder` to prepare raw data.
 2. **Model Training**: Object-oriented scripts for training Random Forest, SVC (Calibrated), and XGBoost models. Preprocessing and modeling steps are bundled into a Scikit-Learn `Pipeline` to prevent data leakage and simplify inference.
@@ -21,25 +21,40 @@ This repository contains an end-to-end MLOps pipeline for classifying heart dise
 ├── experiments/
 │   ├── mlflow.db                        # MLflow SQLite backend store
 │   └── mlruns/                          # MLflow artifact storage
+├── helm/
+│   └── templates/
+│       ├── deployment.yaml    # K8s Deployment (Replicas, Envs, Probes)
+│       └── service.yaml       # K8s Service (NodePort 30080)
+├── models/
+│   └── classification_models.py
+├── outputs/
+│   └── predictions/
+│           └── output.json
+│   └── reports/
 ├── src/
 │   ├── apis/
 │   │   └── predict_api.py               # FastAPI application
 │   ├── feature/
 │   │   └── prepare_data.py              # Data preprocessing logic
 │   └── models/
-│       ├── train_rf.py                  # Random Forest training pipeline
-│       ├── train_svc.py                 # SVC training pipeline
-│       └── train_xgb.py                 # XGBoost training pipeline
+│       ├── random_forest.py                 # Random Forest training pipeline
+│       ├── support_vector_classifier.py     # SVC training pipeline
+│       └── xgboost_model.py                 # XGBoost training pipeline
+├── visualizations/
+│   └── visualize_data.py                 # Data visualisations
 ├── requirements.txt                     # Python dependencies
+├── orchestrate.ps1                      # Powershell script to automate the deployment
 └── README.md                            # Project documentation
 ```
 
-## 🛠️ Setup & Installation
+## Setup & Installation
 
 ### Prerequisites
 * Python 3.10+
 * Docker Desktop (with WSL 2 backend if on Windows)
 * Git
+* Kubernetes
+* MLFlow
 
 ### 1. Clone the repository and install dependencies
 ```bash
@@ -48,7 +63,7 @@ cd MLOpsAssignment
 pip install -r requirements.txt
 ```
 
-## 📊 Running MLflow Tracking Server
+## Running MLflow Tracking Server
 
 To allow the Docker container to fetch model artifacts over HTTP, start the MLflow server with `--serve-artifacts` and host binding configured:
 
@@ -66,7 +81,7 @@ mlflow server `
   --workers 1
 ```
 
-## 🧠 Training & Registering Models
+## Training & Registering Models
 
 With the MLflow server running, execute a training script. The script builds a Scikit-Learn Pipeline, evaluates it via Stratified K-Fold CV, and logs it to MLflow.
 
@@ -74,13 +89,13 @@ With the MLflow server running, execute a training script. The script builds a S
 # Set tracking URI to local server
 $env:MLFLOW_TRACKING_URI="http://localhost:5000"
 
-# Run a training script
-python src/models/train_rf.py
+# Run script. This script trains the different models and logs all the params, metrics and model to the mlflow for experiment tracking
+python experiments/mlflow_runner.py
 ```
 
-*After training, open the MLflow UI (`http://localhost:5000`), navigate to the Model Registry, and register the new run (e.g., as "Random Forest model", Version 1).*
+*After training, open the MLflow UI (`http://localhost:5000`), navigate to the Model Registry, and register the new run (e.g., as "Random_Forest_model", Version 1).*
 
-## 🐳 Docker Deployment & Configuration
+## Docker Deployment & Configuration
 
 ### Docker Image Overview
 The service is packaged in a lightweight container built using Python 3.10-slim. It installs required dependencies (`fastapi`, `uvicorn`, `mlflow`, `scikit-learn`, `skops`, `xgboost`, `pandas`) and exposes port `8000`.
@@ -91,7 +106,7 @@ When running the Docker container, you can configure how it connects to MLflow a
 | Environment Variable | Description | Default Value |
 | :--- | :--- | :--- |
 | `MLFLOW_TRACKING_URI` | The URI where the MLflow tracking server is hosted. Use `http://host.docker.internal:5000` for Windows/Mac hosts. | `http://host.docker.internal:5000` |
-| `MODEL_NAME` | The registered model name in MLflow. | `Random Forest model` |
+| `MODEL_NAME` | The registered model name in MLflow. | `Random_Forest_model` |
 | `MODEL_STAGE` | The specific model version number (e.g., `"1"`, `"2"`) or alias (e.g., `"challenger"`) to load. | `1` |
 
 ### 1. Build the Docker Image
@@ -112,7 +127,7 @@ docker run -d `
 
 ---
 
-## 🔌 API Endpoints Reference
+## API Endpoints Reference
 
 The FastAPI service exposes the following endpoints for health monitoring and real-time inference:
 
@@ -154,17 +169,13 @@ Accepts raw patient clinical features (13 base attributes). The embedded Scikit-
 * **Response Body Example:**
   ```json
   {
-    "predicted_class": 1,
-    "probabilities": {
-      "class_0": 0.12,
-      "class_1": 0.88
-    }
+    "predicted_class": 0
   }
   ```
 
 ---
 
-## 🧪 Testing the API via PowerShell
+## Testing the API via PowerShell
 
 **Health Check:**
 ```powershell
