@@ -1,12 +1,22 @@
+import logging
 import os
 import shutil
+import time
 from contextlib import asynccontextmanager
 
 import mlflow.pyfunc
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from mlflow.tracking import MlflowClient
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
+    handlers=[logging.StreamHandler()],
+)
+logger = logging.getLogger("heart_disease_api")
 
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://host.docker.internal:5000")
 MODEL_NAME = os.getenv("MODEL_NAME", "Random Forest model")
@@ -33,15 +43,15 @@ async def lifespan(app: FastAPI):
         if os.path.exists(local_dir):
             shutil.rmtree(local_dir)
 
-        print(f"Downloading artifacts for run {run_id}...")
+        logger.info(f"Downloading artifacts for run {run_id}...")
         downloaded_path = client.download_artifacts(run_id, "model", dst_path=local_dir)
-        print(f"Artifacts downloaded to: {downloaded_path}")
+        logger.info(f"Artifacts downloaded to: {downloaded_path}")
 
         model = mlflow.pyfunc.load_model(downloaded_path)
-        print(f"Loaded model successfully from local path.")
+        logger.info("Loaded model successfully from local path.")
 
     except Exception as e:
-        print(f"Failed to load model from MLflow: {e}")
+        logger.error(f"Failed to load model from MLflow: {e}")
 
     yield
     model = None
@@ -53,6 +63,24 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = (time.time() - start_time) * 1000
+
+    logger.info(
+        f"Path: {request.url.path} | "
+        f"Method: {request.method} | "
+        f"Status: {response.status_code} | "
+        f"Duration: {process_time:.2f}ms"
+    )
+    return response
+
+Instrumentator().instrument(app).expose(app)
+
 
 class PatientFeatures(BaseModel):
     age: float = Field(..., example=63.0)
@@ -70,19 +98,23 @@ class PatientFeatures(BaseModel):
     thal: int = Field(..., example=1)
 
 
+# Check health status
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "model_loaded": model is not None}
 
 
+# Run prediction
 @app.post("/predict")
 def predict(patient: PatientFeatures):
     if model is None:
+        logger.warning("Prediction attempt failed: Model is not loaded.")
         raise HTTPException(status_code=503, detail="Model is not loaded")
 
     input_data = pd.DataFrame([patient.model_dump()])
 
     try:
+        logger.info(f"Running prediction for payload: {patient.model_dump()}")
         prediction = model.predict(input_data)
         prediction_class = int(prediction[0])
 
@@ -94,5 +126,5 @@ def predict(patient: PatientFeatures):
 
         return response
     except Exception as e:
+        logger.error(f"Prediction error: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Prediction error: {str(e)}")
-

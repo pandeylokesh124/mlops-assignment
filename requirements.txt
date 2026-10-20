@@ -6,3 +6,7 @@ scikit-learn>=1.4.0
 skops>=0.10.0
 pandas>=2.2.0
 numpy>=1.26.0
+prometheus-fastapi-instrumentator
+mlflow-skinny
+pytest
+httpx>=0.24.0

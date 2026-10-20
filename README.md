@@ -54,7 +54,17 @@ This repository contains an end-to-end MLOps pipeline for classifying heart dise
 * Docker Desktop (with WSL 2 backend if on Windows)
 * Git
 * Kubernetes
-* MLFlow
+* fastapi>=0.110.0
+* uvicorn>=0.28.0
+* pydantic>=2.6.4
+* mlflow>=2.11.0
+* scikit-learn>=1.4.0
+* skops>=0.10.0
+* pandas>=2.2.0
+* numpy>=1.26.0
+* prometheus-fastapi-instrumentator
+* mlflow-skinny
+* pytest
 
 ### 1. Clone the repository and install dependencies
 ```bash
