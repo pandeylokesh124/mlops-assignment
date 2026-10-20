@@ -10,3 +10,6 @@ prometheus-fastapi-instrumentator
 mlflow-skinny
 pytest
 httpx>=0.24.0
+ucimlrepo
+xgboost
+pytest-cov
