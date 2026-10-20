@@ -10,7 +10,7 @@ This repository contains an end-to-end MLOps pipeline for classifying heart dise
 4. **Model Serving**: A **FastAPI** application serves predictions. It dynamically downloads the registered model pipeline from the MLflow tracking server during application startup.
 5. **Containerization**: The FastAPI service is containerized using **Docker**, communicating with the host-hosted MLflow server over HTTP.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ├── data/
