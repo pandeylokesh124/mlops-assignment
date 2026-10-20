@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: heart-disease-service
+spec:
+  type: NodePort
+  selector:
+    app: heart-disease-api
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30080  # Fixed external port mapping
